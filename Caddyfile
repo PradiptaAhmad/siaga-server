@@ -1,0 +1,12 @@
+{$SERVER_NAME:localhost} {
+    root * /app/public
+
+    encode zstd gzip
+    php_server
+    file_server
+
+    log {
+        output stdout
+        format console
+    }
+}
