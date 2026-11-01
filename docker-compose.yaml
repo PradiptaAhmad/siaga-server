@@ -1,0 +1,46 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3 Quic
+    environment:
+      OCTANE_SERVER: frankenphp
+      APP_ENV: production
+      APP_DEBUG: "false"
+    volumes:
+      - ./storage:/app/storage
+      - caddy_data:/data
+      - caddy_config:/config
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: secret_root_pass
+      MYSQL_DATABASE: laravel_db
+      MYSQL_USER: laravel_user
+      MYSQL_PASSWORD: secret_user_pass
+    volumes:
+      - db_data:/var/lib/mysql
+
+  redis:
+    image: redis:alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+volumes:
+  db_data:
+  redis_data:
+  caddy_data:
+  caddy_config:

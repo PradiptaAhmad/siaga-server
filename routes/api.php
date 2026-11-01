@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\IuranController;
+use App\Http\Controllers\UploadedFileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,5 +18,13 @@ Route::middleware('auth:api')->group(function () {
         Route::delete('/logout', [AuthController::class, 'logout']);
     });
 
-    Route::apiResource('users', UserController::class);
+
+    Route::post('/files/image', [UploadedFileController::class, 'storeImage']);
+    Route::get('/files/{uploadedFile}/download', [UploadedFileController::class, 'download']);
+    Route::delete('/files/{uploadedFile}', [UploadedFileController::class, 'destroy']);
+
+    Route::apiResources([
+        'users' =>  UserController::class,
+        'iuran' =>  IuranController::class,
+    ]);
 });

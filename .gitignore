@@ -26,3 +26,7 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 pintjson
+
+**/caddy
+frankenphp
+frankenphp-worker.php
