@@ -28,8 +28,8 @@ services:
     environment:
       OCTANE_SERVER: frankenphp
       APP_KEY: ${APP_KEY}
-      APP_ENV: ${APP_ENV:staging}
-      APP_DEBUG: ${APP_DEBUG:false}
+      APP_ENV: ${APP_ENV:-staging}
+      APP_DEBUG: ${APP_DEBUG:-false}
       FRANKENPHP_CONFIG: "worker ./vendor/laravel/octane/bin/frankenphp-worker.php"
     entrypoint: ["php", "octane:frankenphp", "--host=127.0.0.1", "--port=8000", "--workers=auto"]
     volumes:
