@@ -1,29 +1,52 @@
 services:
+  caddy:
+    image: caddy:latest
+    container_name: reverse_proxy_caddy
+    restart: unless-stopped
+    environment:
+      SERVER_NAME: ${APP_URL}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3 QUIC
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+    networks:
+      - app_network
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: laravel_octane_app
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp" # HTTP/3 Quic
     environment:
       OCTANE_SERVER: frankenphp
-      APP_ENV: production
-      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY}
+      APP_ENV: ${APP_ENV:-staging}
+      APP_DEBUG: ${APP_DEBUG:-false}
+      FRANKENPHP_CONFIG: "worker ./vendor/laravel/octane/bin/frankenphp-worker.php"
     volumes:
-      - ./storage:/app/storage
-      - caddy_data:/data
-      - caddy_config:/config
+      # Mount hanya storage/app untuk uploads agar tidak menimpa framework bootstrap/views
+      - ./storage/app:/app/storage/app
     env_file:
       - .env
     depends_on:
-      - db
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app_network
 
   db:
-    image: mysql:8.0
+    image: mysql:8.4 # Hindari :latest di staging/production untuk stabilitas
+    container_name: staging_db
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
@@ -32,12 +55,42 @@ services:
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db_data:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3306:3306" # Bind ke localhost agar port tidak terekspos publik
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
 
   redis:
     image: redis:alpine
+    container_name: staging_redis
     restart: unless-stopped
     volumes:
       - redis_data:/data
+    networks:
+      - app_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: staging_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:4433:80" # Akses via localhost atau SSH tunnel, bukan IP publik bebas
+    environment:
+      PMA_HOST: db
+      PMA_COOKIESECURE: "false"
+    depends_on:
+      - db
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
 
 volumes:
   db_data:

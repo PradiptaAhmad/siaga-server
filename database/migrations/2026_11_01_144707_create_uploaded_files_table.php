@@ -20,7 +20,7 @@ return new class extends Migration
             $table->string('mime_type');
             $table->unsignedBigInteger('size');
 
-            $table->nullableMorphs('fileable');
+            $table->nullableUuidMorphs('fileable');
             $table->timestamps();
         });
     }

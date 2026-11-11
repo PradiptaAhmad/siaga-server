@@ -3,16 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-#[Fillable([
-    'user_id',
-    'amount',
-    'status',
-    'proof_files',
-])]
 class Iuran extends Model
 {
+    use HasUuids;
     protected $table = 'iuran';
 
     protected $fillable = [
@@ -24,6 +20,6 @@ class Iuran extends Model
 
     public function proofFiles()
     {
-        return $this->morphOne(UploadedFile::class, 'fileable_id');
+        return $this->morphOne(UploadedFile::class, 'fileable');
     }
 }

@@ -4,11 +4,13 @@ use App\Http\Middleware\AppendCookiesApi;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
 use Illuminate\Session\Middleware\StartSession;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -45,5 +47,15 @@ return Application::configure(basePath: dirname(__DIR__))
             }
 
             return abort(401, 'You are not authorized to access this resource.');
+        });
+        $exceptions->renderable(function (NotFoundHttpException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "The requested resource was not found.",
+                ], 404);
+            }
+
+            return abort(404, "The requested resource was not found.");
         });
     })->create();

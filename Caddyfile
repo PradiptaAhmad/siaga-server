@@ -1,12 +1,14 @@
-{$SERVER_NAME:localhost} {
-    root * /app/public
+{
+    debug
+}
 
+{$SERVER_NAME:localhost} {
     encode zstd gzip
-    php_server
-    file_server
 
     log {
         output stdout
         format console
     }
+
+    reverse_proxy app:8000
 }
