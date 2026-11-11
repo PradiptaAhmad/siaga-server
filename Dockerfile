@@ -1,6 +1,6 @@
 FROM dunglas/frankenphp:php8.3-bookworm AS base
 
-# Install extensions yang diperlukan Laravel & Octane
+# Install extensions Laravel & Octane
 RUN install-php-extensions \
     pcntl \
     bcmath \
@@ -12,19 +12,26 @@ RUN install-php-extensions \
 
 WORKDIR /app
 
-# Copy seluruh source code
+# Ambil binary Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# 1. Cache Layer Dependencies: Copy lockfile dulu
+COPY composer.json composer.lock ./
+
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-scripts \
+    --prefer-dist \
+    --optimize-autoloader
+
+# 2. Copy source code aplikasi setelah dependensi ter-cache
 COPY . /app
 
-# Install dependency tanpa dev packages
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+# Jalankan dump-autoload akhir & package discovery
+RUN composer dump-autoload --optimize --classmap-authoritative
 
-# Set permission storage & bootstrap cache
-RUN chown -R www-data:www-data /app/storage /app/bootstrap/cache \
+# Setup permission direktori storage dan cache
+RUN mkdir -p /app/storage/framework/{sessions,views,cache} /app/bootstrap/cache \
+    && chown -R www-data:www-data /app/storage /app/bootstrap/cache \
     && chmod -R 775 /app/storage /app/bootstrap/cache
-
-# Direct entrypoint FrankenPHP Octane Worker
-ENV SERVER_NAME=":80"
-ENV FRANKENPHP_CONFIG="worker ./public/index.php"
-
-# Jalankan via Octane CLI atau langsung FrankenPHP
-CMD ["php", "artisan", "octane:frankenphp", "--host=0.0.0.0", "--port=80", "--workers=auto"]
